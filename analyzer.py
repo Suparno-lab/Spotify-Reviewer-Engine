@@ -38,7 +38,7 @@ def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
     
     client = Groq(api_key=key)
     resp = client.chat.completions.create(
-        model="mixtral-8x7b-32768",
+        model="llama-3.1-70b-versatile",
         messages=[
             {"role": "system", "content": "You are a helpful analyst."},
             {"role": "user", "content": prompt},
