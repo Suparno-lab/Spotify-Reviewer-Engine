@@ -1,0 +1,5 @@
+[
+  {"source": "sample", "id": "1", "author": "Alice", "rating": 2, "text": "I can never find new music. The recommendations always repeat the same songs.", "at": "2024-01-01T00:00:00"},
+  {"source": "sample", "id": "2", "author": "Bob", "rating": 3, "text": "Search is poorly surfaced. Discover weekly doesn't show new artists.", "at": "2024-02-01T00:00:00"},
+  {"source": "sample", "id": "3", "author": "Carol", "rating": 1, "text": "The app recommends only top charts. I want niche genres and emerging artists.", "at": "2024-03-01T00:00:00"}
+]
