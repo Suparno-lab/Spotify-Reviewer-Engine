@@ -1,5 +1,5 @@
 streamlit
 python-dotenv
-groq
+google-generativeai
 google-play-scraper
 requests

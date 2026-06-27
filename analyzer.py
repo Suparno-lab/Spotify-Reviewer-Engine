@@ -2,9 +2,9 @@ import os
 from typing import List, Dict, Any
 
 try:
-    from groq import Groq
+    import google.generativeai as genai
 except Exception:
-    Groq = None
+    genai = None
 
 
 def _build_prompt(reviews: List[Dict]) -> str:
@@ -26,27 +26,20 @@ Reviews:
 def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
     prompt = _build_prompt(reviews)
 
-    # Prefer Groq client if available, otherwise fallback to simple request via requests
-    key = api_key or os.environ.get("GROQ_API_KEY")
+    # Use Google Gemini API
+    key = api_key or os.environ.get("GOOGLE_API_KEY")
     if not key or key.strip() == "":
-        return {"error": "No API key provided. Set GROQ_API_KEY in Streamlit secrets or paste in sidebar. Get free at console.groq.com"}
+        return {"error": "No API key provided. Set GOOGLE_API_KEY in Streamlit secrets or paste in sidebar. Get free at ai.google.dev"}
 
     key = key.strip()  # Remove any whitespace
 
-    if Groq is None:
-        raise RuntimeError("Groq library not installed. Run: pip install groq")
+    if genai is None:
+        raise RuntimeError("google-generativeai library not installed. Run: pip install google-generativeai")
     
-    client = Groq(api_key=key)
-    resp = client.chat.completions.create(
-        model="gemma-7b-it",
-        messages=[
-            {"role": "system", "content": "You are a helpful analyst."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.0,
-        max_tokens=2048,
-    )
-    text = resp.choices[0].message.content
+    genai.configure(api_key=key)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    response = model.generate_content(prompt)
+    text = response.text
 
     # Very simple parsing: return raw and leave structured extraction for later
     return {"raw": text}
