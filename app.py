@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from scrapper import load_sample_reviews, fetch_play_store_reviews
-from analyzer import analyze_reviews
+from analyzer import analyze_reviews, DEFAULT_QUESTIONS
 
 
 st.set_page_config(page_title="Review Discovery Engine", layout="wide")
@@ -42,6 +42,19 @@ else:
     pkg = None
     count = None
 
+st.sidebar.markdown("---")
+st.sidebar.header("Custom Questions (Optional)")
+add_custom = st.sidebar.checkbox("Add custom research questions?")
+custom_questions = None
+if add_custom:
+    custom_input = st.sidebar.text_area(
+        "Enter questions (one per line):",
+        height=100,
+        placeholder="e.g.\nWhat features do users want most?\nHow satisfied are users?"
+    )
+    if custom_input.strip():
+        custom_questions = [q.strip() for q in custom_input.split("\n") if q.strip()]
+
 if st.sidebar.button("Fetch & Analyze"):
     with st.spinner("Fetching reviews..."):
         if source == "sample":
@@ -59,34 +72,46 @@ if st.sidebar.button("Fetch & Analyze"):
         st.success(f"Loaded {len(reviews)} reviews — running analysis...")
         with st.spinner("Analyzing reviews with the AI..."):
             try:
-                report = analyze_reviews(reviews, api_key=GOOGLE_API_KEY)
+                report = analyze_reviews(reviews, api_key=GOOGLE_API_KEY, custom_questions=custom_questions)
             except Exception as e:
                 st.error(f"Analysis failed: {e}")
                 report = {"error": str(e)}
 
         st.header("AI Analysis")
         if isinstance(report, dict):
-            if "raw" in report and len(report) == 1:
-                st.subheader("Raw model output")
-                st.text(report["raw"])
-            else:
-                st.subheader("Summary")
-                st.write(report.get("summary"))
-
-                st.subheader("Themes")
-                for t in report.get("themes", []):
-                    st.write(f"- {t}")
-
-                st.subheader("Top Issues")
-                for it in report.get("top_issues", []):
-                    st.write(f"- {it}")
-
-                st.subheader("Segments & Unmet Needs")
-                st.write(report.get("segments"))
-
-                st.subheader("Sample Quotes")
-                for q in report.get("sample_quotes", [])[:10]:
-                    st.info(q)
+            # Display structured Q&A if available
+            if "questions_and_answers" in report:
+                st.subheader("Research Findings")
+                
+                # Display each Q&A
+                for i, qa in enumerate(report.get("questions_and_answers", []), 1):
+                    with st.expander(f"**Q{i}: {qa.get('question', 'N/A')}**"):
+                        st.markdown(f"**Answer:** {qa.get('answer', 'N/A')}")
+                        
+                        if qa.get("supporting_quotes"):
+                            st.markdown("**Supporting Quotes:**")
+                            for quote in qa.get("supporting_quotes", []):
+                                st.info(f"*\"{quote}\"*")
+                        
+                        if qa.get("patterns"):
+                            st.markdown("**Key Patterns:**")
+                            for pattern in qa.get("patterns", []):
+                                st.write(f"• {pattern}")
+                
+                # Overall summary
+                if report.get("overall_summary"):
+                    st.markdown("---")
+                    st.subheader("Overall Summary")
+                    st.write(report.get("overall_summary"))
+            
+            # Fallback to raw output if structured parsing failed
+            elif "raw" in report:
+                st.subheader("Analysis Output")
+                st.write(report["raw"])
+            
+            # Show error if present
+            if "error" in report:
+                st.warning(f"⚠ {report['error']}")
 
         st.sidebar.markdown("---")
         st.sidebar.write("Fetched reviews preview:")
@@ -95,3 +120,9 @@ if st.sidebar.button("Fetch & Analyze"):
 
 else:
     st.info("Choose a source and click 'Fetch & Analyze' to start the demo.")
+    
+    st.markdown("---")
+    st.markdown("### Default Research Questions")
+    st.write("The analyzer will answer these questions by default:")
+    for i, q in enumerate(DEFAULT_QUESTIONS, 1):
+        st.write(f"{i}. {q}")

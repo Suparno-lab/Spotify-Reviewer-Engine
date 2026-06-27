@@ -1,4 +1,5 @@
 import os
+import json
 from typing import List, Dict, Any
 
 try:
@@ -7,24 +8,56 @@ except Exception:
     genai = None
 
 
-def _build_prompt(reviews: List[Dict]) -> str:
-    sample_texts = "\n\n".join([r.get("text", "") for r in reviews[:50]])
-    prompt = f"""
-You are an expert product analyst. Given the following user reviews, produce:
-1) A concise summary.
-2) Top themes (3-8) as bullet points.
-3) Top issues (3-6) ranked.
-4) User segments and unmet needs.
-5) 10 representative quotes.
+# Default research questions
+DEFAULT_QUESTIONS = [
+    "Why do users struggle to discover new music?",
+    "What are the most common frustrations with recommendations?",
+    "What listening behaviors are users trying to achieve?",
+    "What causes users to repeatedly listen to the same content?",
+    "Which user segments experience different discovery challenges?",
+    "What unmet needs emerge consistently across reviews?"
+]
 
-Reviews:
+
+def _build_prompt(reviews: List[Dict], questions: List[str] = None) -> str:
+    if questions is None:
+        questions = DEFAULT_QUESTIONS
+    
+    sample_texts = "\n\n".join([r.get("text", "") for r in reviews[:100]])
+    
+    questions_str = "\n".join([f"{i+1}. {q}" for i, q in enumerate(questions)])
+    
+    prompt = f"""You are an expert product analyst. Analyze the following user reviews and answer each question with specific insights, patterns, and supporting evidence.
+
+REVIEWS:
 {sample_texts}
-"""
+
+QUESTIONS TO ANSWER:
+{questions_str}
+
+For each question, provide:
+- A clear, concise answer (2-3 sentences)
+- 2-3 specific supporting quotes from the reviews
+- Any relevant user segments or patterns
+
+Format your response as JSON with this exact structure:
+{{
+  "questions_and_answers": [
+    {{
+      "question": "Question text",
+      "answer": "Your answer",
+      "supporting_quotes": ["Quote 1", "Quote 2", "Quote 3"],
+      "patterns": ["Pattern 1", "Pattern 2"]
+    }}
+  ],
+  "overall_summary": "Brief overall summary of key insights"
+}}"""
     return prompt
 
 
-def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
-    prompt = _build_prompt(reviews)
+def analyze_reviews(reviews: List[Dict], api_key: str = None, custom_questions: List[str] = None) -> Dict[str, Any]:
+    questions = custom_questions if custom_questions else DEFAULT_QUESTIONS
+    prompt = _build_prompt(reviews, questions)
 
     # Use Google Gemini API
     key = api_key or os.environ.get("GOOGLE_API_KEY")
@@ -37,9 +70,21 @@ def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
         raise RuntimeError("google-generativeai library not installed. Run: pip install google-generativeai")
     
     genai.configure(api_key=key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.0-flash")
     response = model.generate_content(prompt)
     text = response.text
 
-    # Very simple parsing: return raw and leave structured extraction for later
-    return {"raw": text}
+    # Try to parse as JSON, fallback to raw text
+    try:
+        # Extract JSON from response (in case there's markdown formatting)
+        json_str = text
+        if "```json" in text:
+            json_str = text.split("```json")[1].split("```")[0]
+        elif "```" in text:
+            json_str = text.split("```")[1].split("```")[0]
+        
+        result = json.loads(json_str)
+        return result
+    except Exception:
+        # Return raw text if JSON parsing fails
+        return {"raw": text, "error": "Could not parse structured response"}
