@@ -33,37 +33,20 @@ def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
 
     key = key.strip()  # Remove any whitespace
 
-    if Groq is not None:
-        client = Groq(api_key=key)
-        try:
-            resp = client.chat.completions.create(
-                model="mixtral-8x7b-32768",
-                messages=[
-                    {"role": "system", "content": "You are a helpful analyst."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.0,
-                max_tokens=2048,
-            )
-            text = resp.choices[0].message.content
-        except Exception:
-            import requests
-
-            url = "https://api.groq.com/openai/v1/chat/completions"
-            headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-            data = {
-                "model": "mixtral-8x7b-32768",
-                "messages": [
-                    {"role": "system", "content": "You are a helpful analyst."},
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.0,
-                "max_tokens": 2048,
-            }
-            r = requests.post(url, headers=headers, json=data, timeout=60)
-            r.raise_for_status()
-            j = r.json()
-            text = j["choices"][0]["message"]["content"]
+    if Groq is None:
+        raise RuntimeError("Groq library not installed. Run: pip install groq")
+    
+    client = Groq(api_key=key)
+    resp = client.chat.completions.create(
+        model="mixtral-8x7b-32768",
+        messages=[
+            {"role": "system", "content": "You are a helpful analyst."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.0,
+        max_tokens=2048,
+    )
+    text = resp.choices[0].message.content
 
     # Very simple parsing: return raw and leave structured extraction for later
     return {"raw": text}
