@@ -2,9 +2,9 @@ import os
 from typing import List, Dict, Any
 
 try:
-    from openai import OpenAI
+    from groq import Groq
 except Exception:
-    OpenAI = None
+    Groq = None
 
 
 def _build_prompt(reviews: List[Dict]) -> str:
@@ -26,37 +26,39 @@ Reviews:
 def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
     prompt = _build_prompt(reviews)
 
-    # Prefer OpenAI client if available, otherwise fallback to simple request via requests
-    key = api_key or os.environ.get("OPENAI_API_KEY")
+    # Prefer Groq client if available, otherwise fallback to simple request via requests
+    key = api_key or os.environ.get("GROQ_API_KEY")
     if not key or key.strip() == "":
-        return {"error": "No API key provided. Set OPENAI_API_KEY in Streamlit secrets or paste in sidebar."}
+        return {"error": "No API key provided. Set GROQ_API_KEY in Streamlit secrets or paste in sidebar. Get free at console.groq.com"}
 
     key = key.strip()  # Remove any whitespace
 
-    if OpenAI is not None:
-        client = OpenAI(api_key=key)
+    if Groq is not None:
+        client = Groq(api_key=key)
         try:
             resp = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="mixtral-8x7b-32768",
                 messages=[
                     {"role": "system", "content": "You are a helpful analyst."},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.0,
+                max_tokens=2048,
             )
-            text = resp["choices"][0]["message"]["content"]
+            text = resp.choices[0].message.content
         except Exception:
             import requests
 
-            url = "https://api.openai.com/v1/chat/completions"
+            url = "https://api.groq.com/openai/v1/chat/completions"
             headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
             data = {
-                "model": "gpt-4o-mini",
+                "model": "mixtral-8x7b-32768",
                 "messages": [
                     {"role": "system", "content": "You are a helpful analyst."},
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.0,
+                "max_tokens": 2048,
             }
             r = requests.post(url, headers=headers, json=data, timeout=60)
             r.raise_for_status()

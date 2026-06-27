@@ -15,23 +15,23 @@ st.title("AI-powered Review Discovery Engine — Demo")
 
 st.sidebar.header("Configuration")
 # Check Streamlit secrets first, then environment, then sidebar input
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-if not OPENAI_API_KEY:
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+if not GROQ_API_KEY:
     try:
-        OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+        GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     except:
-        OPENAI_API_KEY = ""
+        GROQ_API_KEY = ""
 
 # Allow override from sidebar
-sidebar_key = st.sidebar.text_input("OpenAI API key (optional)", value="", type="password")
+sidebar_key = st.sidebar.text_input("Groq API key (get free at console.groq.com)", value="", type="password")
 if sidebar_key:
-    OPENAI_API_KEY = sidebar_key
+    GROQ_API_KEY = sidebar_key
 
 # Debug: show if key was detected
-if OPENAI_API_KEY:
-    st.sidebar.success("✓ API key detected")
+if GROQ_API_KEY:
+    st.sidebar.success("✓ Groq API key detected")
 else:
-    st.sidebar.warning("⚠ No API key found. Add it to Streamlit Secrets or paste above.")
+    st.sidebar.warning("⚠ No Groq API key found. Get free at console.groq.com or paste above.")
 
 source = st.sidebar.selectbox("Data source", ["sample", "play_store"])
 
@@ -59,7 +59,7 @@ if st.sidebar.button("Fetch & Analyze"):
         st.success(f"Loaded {len(reviews)} reviews — running analysis...")
         with st.spinner("Analyzing reviews with the AI..."):
             try:
-                report = analyze_reviews(reviews, api_key=OPENAI_API_KEY)
+                report = analyze_reviews(reviews, api_key=GROQ_API_KEY)
             except Exception as e:
                 st.error(f"Analysis failed: {e}")
                 report = {"error": str(e)}
