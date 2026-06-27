@@ -14,14 +14,16 @@ st.set_page_config(page_title="Review Discovery Engine", layout="wide")
 st.title("AI-powered Review Discovery Engine — Demo")
 
 st.sidebar.header("Configuration")
-# Check Streamlit secrets first, then sidebar input
-try:
-    OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", "")
-except:
-    OPENAI_API_KEY = ""
+# Check Streamlit secrets first, then environment, then sidebar input
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+if not OPENAI_API_KEY:
+    try:
+        OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+    except:
+        OPENAI_API_KEY = ""
 
 # Allow override from sidebar
-sidebar_key = st.sidebar.text_input("OpenAI API key (optional)", value=OPENAI_API_KEY, type="password")
+sidebar_key = st.sidebar.text_input("OpenAI API key (optional)", value="", type="password")
 if sidebar_key:
     OPENAI_API_KEY = sidebar_key
 
