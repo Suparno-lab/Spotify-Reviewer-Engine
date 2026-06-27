@@ -28,8 +28,10 @@ def analyze_reviews(reviews: List[Dict], api_key: str = None) -> Dict[str, Any]:
 
     # Prefer OpenAI client if available, otherwise fallback to simple request via requests
     key = api_key or os.environ.get("OPENAI_API_KEY")
-    if not key:
-        return {"error": "No API key provided. Set OPENAI_API_KEY or pass api_key."}
+    if not key or key.strip() == "":
+        return {"error": "No API key provided. Set OPENAI_API_KEY in Streamlit secrets or paste in sidebar."}
+
+    key = key.strip()  # Remove any whitespace
 
     if OpenAI is not None:
         client = OpenAI(api_key=key)

@@ -27,6 +27,12 @@ sidebar_key = st.sidebar.text_input("OpenAI API key (optional)", value="", type=
 if sidebar_key:
     OPENAI_API_KEY = sidebar_key
 
+# Debug: show if key was detected
+if OPENAI_API_KEY:
+    st.sidebar.success("✓ API key detected")
+else:
+    st.sidebar.warning("⚠ No API key found. Add it to Streamlit Secrets or paste above.")
+
 source = st.sidebar.selectbox("Data source", ["sample", "play_store"])
 
 if source == "play_store":
