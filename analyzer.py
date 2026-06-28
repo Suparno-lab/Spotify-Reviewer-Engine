@@ -70,7 +70,7 @@ def analyze_reviews(reviews: List[Dict], api_key: str = None, custom_questions: 
         raise RuntimeError("google-generativeai library not installed. Run: pip install google-generativeai")
     
     genai.configure(api_key=key)
-    model = genai.GenerativeModel("gemini-3.5-flash-lite")
+    model = genai.GenerativeModel("gemini-3.1-flash-lite")
     response = model.generate_content(prompt)
     text = response.text
 
